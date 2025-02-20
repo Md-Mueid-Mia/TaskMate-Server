@@ -17,13 +17,16 @@ const httpServer = createServer(app);
 // Middleware
 const corsOptions = {
   origin: [
-    "http://localhost:5173",
+    "http://localhost:5173", "https://taskmate-abb2d.web.app"
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
   exposedHeaders: ["set-cookie"],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
 };
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -52,7 +55,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("TaskMateDB");
     const usersCollection = db.collection("users");
@@ -140,7 +143,12 @@ async function run() {
         res.send(result);
       });
   
-      // get all data by email
+      // get all data 
+        app.get("/users", async (req, res) => {
+        const users = await usersCollection.find({}).toArray();
+        res.send(users);
+        });
+
 
               // Get tasks for a specific user
         app.get("/tasks/:email", verifyToken, async (req, res) => {
@@ -279,8 +287,8 @@ app.patch("/tasks/:id", verifyToken,validateObjectId, async (req, res) => {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
